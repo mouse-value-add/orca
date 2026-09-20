@@ -2,7 +2,7 @@
 title: Give your agents web search
 ---
 
-Agents you launch in Orca run with their own subscriptions and their own tools — but none of them can read today's internet out of the box. An MCP server fixes that: define one in a config file at the worktree root, and every agent that reads it gets a live web-search tool.
+Agents you launch in Orca run with their own subscriptions and their own tools. Several ship some form of built-in web access, but it isn't always enabled, and it isn't the same as a tool the agent can call on demand. An MCP server closes that gap: define one in a config file at the worktree root, and every agent that reads it gets a live web-search tool.
 
 This recipe uses You.com's hosted MCP server as the example — its free profile needs no account or API key, so every step is copy-paste runnable. Any hosted search MCP works with the same shape: swap in your provider's URL.
 
@@ -23,13 +23,19 @@ This recipe uses You.com's hosted MCP server as the example — its free profile
 
 That's Claude Code's project-scope MCP config — it picks the server up the next time you launch it in that worktree.
 
-1. Cursor reads the same `mcpServers` map from `.cursor/mcp.json` — copy the block there if you launch Cursor CLI. Or skip the file entirely and run:
+1. Cursor reads an `mcpServers` map from `.cursor/mcp.json` at the worktree root. It uses `url` for remote servers (no `type` key — Cursor infers the transport), so copy the block without it:
 
-```bash
-claude mcp add --transport http you-web "https://api.you.com/mcp?profile=free" --scope project
+```json
+{
+  "mcpServers": {
+    "you-web": {
+      "url": "https://api.you.com/mcp?profile=free"
+    }
+  }
+}
 ```
 
-1. Codex doesn't read `.mcp.json`; its servers live in `~/.codex/config.toml`:
+1. Codex doesn't read `.mcp.json`; its servers live in `config.toml` — `~/.codex/config.toml` globally, or `.codex/config.toml` at the project root for trusted projects. The project-scoped file is the better fit here: it travels with the worktree like the other configs:
 
 ```toml
 [mcp_servers.you-web]
@@ -42,7 +48,7 @@ url = "https://api.you.com/mcp?profile=free"
 
 ## Keys stay out of the repo
 
-The example profile is deliberately keyless, so it's safe to commit. If you use an authenticated MCP server instead, don't put its API key in a committed `.mcp.json`. Keep keyed servers in the agent's user-level config — `~/.claude.json` for Claude Code, `~/.codex/config.toml` for Codex — and leave the keyless server in the project file.
+The example profile is deliberately keyless, so it's safe to commit. If you use an authenticated MCP server instead, don't put its API key in a committed `.mcp.json`. Keep keyed servers in the agent's user-level config — `~/.claude.json` for Claude Code, `~/.codex/config.toml` for Codex, `~/.cursor/mcp.json` for Cursor — and leave the keyless server in the project file. Note that if the same server name appears in both a project file and the user-level file, the project configuration wins (Cursor and Claude Code both resolve duplicates that way), so a keyless project entry will shadow — not merge with — a keyed global one.
 
 ## Why it works
 
